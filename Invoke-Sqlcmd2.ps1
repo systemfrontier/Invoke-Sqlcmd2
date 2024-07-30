@@ -14,7 +14,7 @@ https://github.com/systemfrontier/Invoke-Sqlcmd2
 
 .NOTES
 ==============================================
-Version:	2.0
+Version:	2.1
 Author:		Jay Adams, Noxigen LLC
 Created:	2024-04-21
 Copyright:	Noxigen LLC. All rights reserved.
@@ -25,6 +25,9 @@ https://systemfrontier.com/
 History:	2024-07-17	Jay Adams, Noxigen LLC
 			Fix: Single result with a single row not being treated as an array of DataRow
 			Feat: Multiple results sets are returned as arrays of DataRow for more uniformity across result types
+			
+			2024-07-30	Jay Adams, Noxigen LLC
+			Fix: Single result set returns ArrayList of rows now
 #>
 	param (
 		[Parameter(Mandatory=$true)]
@@ -135,14 +138,14 @@ History:	2024-07-17	Jay Adams, Noxigen LLC
 
 						foreach ($table in $dataset.Tables)
 						{
-							[void]$rs.Add($table)
+							[void]$rs.Add($table.Rows)
 						}
 
 						return $rs
 					} else {
 						# Single result set
 						$results = New-Object System.Collections.ArrayList
-						[void]$results.Add($dataset.Tables[0])
+						[void]$results.Add($dataset.Tables[0].Rows)
 						return $results
 					}
 				}
