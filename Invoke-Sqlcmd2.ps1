@@ -138,7 +138,7 @@ function Invoke-Sqlcmd2 {
     if ($null -ne $Parameters -and $Parameters.Count -gt 0) {
         
         foreach ($parameter in $Parameters.GetEnumerator()) {
-            if ($null -ne $parameter.Value -and !$parameter.Name.StartsWith("___")) { # Skip migration metadata
+            if ($null -ne $parameter.Value) {
                 $command.Parameters.AddWithValue("@$($parameter.Name)", $parameter.Value) | Out-Null
             }
         }
