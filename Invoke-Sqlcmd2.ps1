@@ -14,7 +14,7 @@ function Invoke-Sqlcmd2 {
     
     .NOTES
     ==============================================
-    Version:	2.2
+    Version:	2.3
     Author:		Jay Adams, Noxigen LLC
     Created:	2024-04-21
     Copyright:	Noxigen LLC. All rights reserved.
@@ -30,6 +30,8 @@ function Invoke-Sqlcmd2 {
                 Fix: Single result set returns ArrayList of rows now
                 2024-09-18	Jay Adams, Noxigen LLC
                 Feat: Added support for SQL authentication and parameterized queries
+                2025-04-23	Jay Adams, Noxigen LLC
+                Feat: Support showing PRINT messages in console output
     #>
     param (
         [Parameter(Mandatory=$true)]
@@ -88,7 +90,11 @@ function Invoke-Sqlcmd2 {
 
         [Parameter()]
         [System.Collections.Specialized.OrderedDictionary]
-        $Parameters
+        $Parameters,
+
+        [Parameter()]
+        [switch]
+        $ShowMessages = $false
     )
 
     if ($QueryType -eq "none" -and $Query -match ";") {
@@ -148,6 +154,9 @@ function Invoke-Sqlcmd2 {
 
     try {
         $connection.Open()
+
+        Register-ObjectEvent -InputObject $connection -MessageData $ShowMessages -EventName InfoMessage `
+        -Action { if ($event.MessageData -eq $true) { Write-Host "$($event.SourceEventArgs)" } } -SupportEvent
 
         if ($QueryType -eq "NonQuery") {
             $command.ExecuteNonQuery()
