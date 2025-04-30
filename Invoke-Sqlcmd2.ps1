@@ -14,8 +14,8 @@ function Invoke-Sqlcmd2 {
     
     .NOTES
     ==============================================
-    Version:	2.3
-    Author:		Jay Adams, Noxigen LLC
+    Version:	2.4
+    Author:     Jay Adams, Noxigen LLC
     Created:	2024-04-21
     Copyright:	Noxigen LLC. All rights reserved.
     
@@ -32,6 +32,12 @@ function Invoke-Sqlcmd2 {
                 Feat: Added support for SQL authentication and parameterized queries
                 2025-04-23	Jay Adams, Noxigen LLC
                 Feat: Support showing PRINT messages in console output
+                2025-04-28	Jay Adams, Noxigen LLC
+                Feat (breaking): Added Messages property for PRINT statements. Data property holds array of tables now.
+                2025-04-30	Jay Adams, Noxigen LLC
+                Fix: Message capture not consistent
+                Fix: Multiple results are nested
+                Feat: Added Write-Verbose support for PRINT messages
     #>
     param (
         [Parameter(Mandatory=$true)]
@@ -94,7 +100,7 @@ function Invoke-Sqlcmd2 {
 
         [Parameter()]
         [switch]
-        $ShowMessages = $false
+        $CaptureMessages = $false
     )
 
     if ($QueryType -eq "none" -and $Query -match ";") {
@@ -152,17 +158,36 @@ function Invoke-Sqlcmd2 {
 
     $command.CommandText = $Query
 
+    $data = [System.Collections.ArrayList]::new()
+    $messages = [System.Collections.ArrayList]::new()
+
+    $results = New-Object psobject -Property @{
+        Data = $data
+        CaptureMessages = $CaptureMessages
+        Messages = $messages
+    }
+
+    if ($CaptureMessages -eq $true) {
+        $handler = [System.Data.SqlClient.SqlInfoMessageEventHandler] { param($sender, $event) 
+            $eventMessage = $event.Message
+            Write-Verbose $eventMessage
+            if ($CaptureMessages -eq $true) {
+                $results.Messages.Add($eventMessage)
+            }
+        }
+
+        $connection.add_InfoMessage($handler)
+    }
+
     try {
         $connection.Open()
-
-        Register-ObjectEvent -InputObject $connection -MessageData $ShowMessages -EventName InfoMessage `
-        -Action { if ($event.MessageData -eq $true) { Write-Host "$($event.SourceEventArgs)" } } -SupportEvent
 
         if ($QueryType -eq "NonQuery") {
             $command.ExecuteNonQuery()
         } else {
             if ($QueryType -eq "Scalar") {
-                return $command.ExecuteScalar()
+                $value = $command.ExecuteScalar()
+                [void]$results.Data.Add($value)
             } else {
                 $adapter = [System.Data.SqlClient.SqlDataAdapter]::new($command)
                 $dataset = [System.Data.DataSet]::new()
@@ -171,23 +196,23 @@ function Invoke-Sqlcmd2 {
 
                 if ($null -ne $dataset) {
                     if ($QueryType -eq "MultipleResultSets") {
-                        $rs = New-Object System.Collections.ArrayList
-
                         foreach ($table in $dataset.Tables)
                         {
-                            [void]$rs.Add($table.Rows)
+                            # [void]$rs.Add($table.Rows)
+                            [void]$results.Data.Add($table)
                         }
-
-                        return $rs
                     } else {
                         # Single result set
-                        $results = New-Object System.Collections.ArrayList
-                        [void]$results.Add($dataset.Tables[0].Rows)
-                        return $results
+                        if ($dataset.Tables[0].Rows.Count -gt 0)
+                        {
+                            [void]$results.Data.Add($dataset.Tables[0].Rows)
+                        }
                     }
                 }
             }
         }
+
+        return $results
     } finally {
         if ($connection.State -eq [System.Data.ConnectionState]::Open) {
             $connection.Close()
