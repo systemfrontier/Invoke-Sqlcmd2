@@ -14,7 +14,7 @@ function Invoke-Sqlcmd2 {
     
     .NOTES
     ==============================================
-    Version:	2.4
+    Version:	2.5
     Author:     Jay Adams, Noxigen LLC
     Created:	2024-04-21
     Copyright:	Noxigen LLC. All rights reserved.
@@ -38,6 +38,8 @@ function Invoke-Sqlcmd2 {
                 Fix: Message capture not consistent
                 Fix: Multiple results are nested
                 Feat: Added Write-Verbose support for PRINT messages
+                2025-09-24  Jay Adams, Noxigen LLC
+                Fix: Passing null parameter value causes parameter to be skipped
     #>
     param (
         [Parameter(Mandatory=$true)]
@@ -152,6 +154,8 @@ function Invoke-Sqlcmd2 {
         foreach ($parameter in $Parameters.GetEnumerator()) {
             if ($null -ne $parameter.Value) {
                 $command.Parameters.AddWithValue("@$($parameter.Name)", $parameter.Value) | Out-Null
+            } else {
+                $command.Parameters.AddWithValue("@$($parameter.Name)", [System.DBNull]::Value) | Out-Null
             }
         }
     }
