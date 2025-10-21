@@ -40,6 +40,8 @@ function Invoke-Sqlcmd2 {
                 Feat: Added Write-Verbose support for PRINT messages
                 2025-09-24  Jay Adams, Noxigen LLC
                 Fix: Passing null parameter value causes parameter to be skipped
+                2025-10-20  Jay Adams, Noxigen LLC
+                Fix: SingleResultSet incorrectly returns data as one row
     #>
     param (
         [Parameter(Mandatory=$true)]
@@ -209,7 +211,7 @@ function Invoke-Sqlcmd2 {
                         # Single result set
                         if ($dataset.Tables[0].Rows.Count -gt 0)
                         {
-                            [void]$results.Data.Add($dataset.Tables[0].Rows)
+                            [void]$results.Data.AddRange($dataset.Tables[0].Rows)
                         }
                     }
                 }
