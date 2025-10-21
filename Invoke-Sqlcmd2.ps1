@@ -14,7 +14,7 @@ function Invoke-Sqlcmd2 {
     
     .NOTES
     ==============================================
-    Version:	2.5
+    Version:	2.6
     Author:     Jay Adams, Noxigen LLC
     Created:	2024-04-21
     Copyright:	Noxigen LLC. All rights reserved.
