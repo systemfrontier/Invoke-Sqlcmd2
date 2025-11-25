@@ -129,10 +129,10 @@ function Invoke-Sqlcmd2 {
         $_connectionString = `
         "Data Source=$ServerInstance;" + 
         "Initial Catalog=$Database;" + 
-        "Encrypt=$(-not $Unecrypted);" + 
+        "Encrypt=$(-not $Unencrypted);" + 
         "Connection Timeout=$ConnectionTimeout;"
 
-        if (![string]::IsNullOrWhitespace($ApplicationName)) {
+        if (![string]::IsNullOrWhiteSpace($ApplicationName)) {
             $_connectionString += "Application Name=$ApplicationName;"
         }
 
@@ -225,3 +225,4 @@ function Invoke-Sqlcmd2 {
         }
     }
 }
+
